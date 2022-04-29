@@ -47,7 +47,8 @@ def special_form?(exp)
     letrec?(exp) or
     if?(exp) or
     define?(exp) or
-    cond?(exp)
+    cond?(exp) or
+    quote?(exp)
 end
 
 def lambda?(exp)
@@ -67,6 +68,8 @@ def eval_special_form(exp, env)
     eval_define(exp, env)
   elsif cond?(exp)
     eval_cond(exp, env)
+  elsif quote?(exp)
+    eval_quote(exp, env)
   end
 end
 
@@ -291,6 +294,23 @@ def cond?(exp)
   exp[0] == :cond
 end
 
+def eval_quote(exp, env)
+  car(cdr(exp))
+end
+
+def quote?(exp)
+  exp[0] == :quote
+end
+
+def parse(exp)
+  program = exp.strip().
+              gsub(/[a-zA-Z\+\-\*><=][0-9a-zA-Z\+\-=!*]*/, ':\\0').
+              gsub(/\s+/, ', ').
+              gsub(/\(/, '[').
+              gsub(/\)/, ']')
+  eval(program)
+end
+
 def execute(exp)
   p _eval(exp, $global_env)
 end
@@ -329,10 +349,25 @@ end
 # execute(exp)
 
 # ================
-exp =
-  [:cond,
-   [[:>, 1, 1], 1],
-   [[:>, 2, 1], 2],
-   [[:>, 3, 1], 3],
-   [:else, -1]]
+
+# exp =
+#   [:cond,
+#    [[:>, 1, 1], 1],
+#    [[:>, 2, 1], 2],
+#    [[:>, 3, 1], 3],
+#    [:else, -1]]
+# execute(exp)
+
+# ================
+
+# exp = parse('(define (length list) (if (null? list) 0 (+ (length (cdr list)) 1)))')
+# execute(exp)
+# exp = parse('(length nil)')
+# execute(exp)
+
+# ================
+
+exp = parse('(define (length list) (if (null? list) 0 (+ (length (cdr list)) 1)))')
+execute(exp)
+exp = parse('(length (quote (1 2 3)))')
 execute(exp)
