@@ -46,7 +46,8 @@ def special_form?(exp)
     let?(exp) or
     letrec?(exp) or
     if?(exp) or
-    define?(exp)
+    define?(exp) or
+    cond?(exp)
 end
 
 def lambda?(exp)
@@ -64,6 +65,8 @@ def eval_special_form(exp, env)
     eval_if(exp, env)
   elsif define?(exp)
     eval_define(exp, env)
+  elsif cond?(exp)
+    eval_cond(exp, env)
   end
 end
 
@@ -266,6 +269,32 @@ def define?(exp)
   exp[0] == :define
 end
 
+def eval_cond(exp, env)
+  if_exp = cond_to_if(cdr(exp))
+  eval_if(if_exp, env)
+end
+
+def cond_to_if(cond_exp)
+  if cond_exp == []
+    ''
+  else
+    e = car(cond_exp)
+    p, c = e[0], e[1]
+    if p == :else
+      p = :true
+    end
+    [:if, p, c, cond_to_if(cdr(cond_exp))]
+  end
+end
+
+def cond?(exp)
+  exp[0] == :cond
+end
+
+def execute(exp)
+  p _eval(exp, $global_env)
+end
+
 # ================
 
 # exp = [[:lambda, [:x, :y], [:+, :x, :y]], 3, 2]
@@ -290,13 +319,20 @@ end
 #    [:fact, 3]]
 # p _eval(exp, $global_env) # => 6
 
-def execute(exp)
-  p _eval(exp, $global_env)
-end
+# ================
 
+# exp =
+#   [:define, [:length, :list],
+#    [:if, [:null?, :list],
+#     0,
+#     [:+, [:length, [:cdr, :list]], 1]]]
+# execute(exp)
+
+# ================
 exp =
-  [:define, [:length, :list],
-   [:if, [:null?, :list],
-    0,
-    [:+, [:length, [:cdr, :list]], 1]]]
+  [:cond,
+   [[:>, 1, 1], 1],
+   [[:>, 2, 1], 2],
+   [[:>, 3, 1], 3],
+   [:else, -1]]
 execute(exp)
